@@ -1,0 +1,92 @@
+---
+title: "Ex-Final"
+output: html_document
+date: "2025-06-05"
+---
+```{r}
+library(rio)
+data=import("dataOK_all - dataOK_all.csv")
+str(data)
+```
+```{r}
+library(stringr)
+library(cluster)
+library(factoextra)
+library(dplyr)
+```
+
+```{r}
+data <- data %>%
+  filter(toupper(provincia) != "LIMA") %>%
+  mutate(
+    agua_red_dentro = agua1_Red / agua10_Total,
+    razon_keiko_castillo = Keiko / Castillo,
+    tasa_fallecidos = (covidFallecidos / covidPositivos) * 1000
+  )
+```
+
+```{r}
+df_cluster <- data %>% 
+  select(agua_red_dentro, razon_keiko_castillo, tasa_fallecidos)
+df_scaled <- scale(df_cluster)
+
+```
+
+```{r}
+agnes_res <- agnes(df_scaled, method = "ward")
+agnes_clusters <- cutree(as.hclust(agnes_res), k = 3)
+sil_agnes <- silhouette(agnes_clusters, dist(df_scaled))
+mean(sil_agnes[, 3])
+```
+```{r}
+df_scaled <- scale(df_cluster)
+```
+```{r}
+agnes_res <- agnes(df_scaled, method = "ward")
+agnes_clusters <- cutree(as.hclust(agnes_res), k = 3)
+sil_agnes <- silhouette(agnes_clusters, dist(df_scaled))
+mean(sil_agnes[, 3])
+```
+
+```{r}
+fviz_dend(agnes_res, k = 3, rect = TRUE, rect_border = "blue", rect_fill = TRUE,
+          main = "Dendrograma AGNES")
+```
+```{r}
+diana_res <- diana(df_scaled)
+diana_clusters <- cutree(as.hclust(diana_res), k = 3)
+sil_diana <- silhouette(diana_clusters, dist(df_scaled))
+mean(sil_diana[, 3])
+```
+
+
+```{r}
+set.seed(123)
+kmeans_res <- kmeans(df_scaled, centers = 3, nstart = 25)
+sil_kmeans <- silhouette(kmeans_res$cluster, dist(df_scaled))
+mean(sil_kmeans[, 3])
+```
+
+```{r}
+fviz_cluster(kmeans_res, data = df_scaled,
+             palette = "jco", 
+             geom = "point", 
+             ellipse.type = "convex",
+             ggtheme = theme_minimal(),
+             main = "Clusters con K-means")
+```
+```{r}
+sum(agnes_clusters != diana_clusters)
+sum(diana_clusters != kmeans_res$cluster)
+sum(agnes_clusters != kmeans_res$cluster)
+```
+```{r}
+fviz_dend(diana_res, k = 3, rect = TRUE, rect_border = "red", rect_fill = TRUE,
+          main = "Dendrograma DIANA")
+```
+```{r}
+fviz_silhouette(sil_agnes) + ggtitle("Silhouette - AGNES")
+fviz_silhouette(sil_diana) + ggtitle("Silhouette - DIANA")
+fviz_silhouette(sil_kmeans) + ggtitle("Silhouette - K-means")
+```
+
