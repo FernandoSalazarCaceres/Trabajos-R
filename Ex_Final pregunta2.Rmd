@@ -1,0 +1,77 @@
+---
+title: "Ex-Final 2"
+output: html_document
+date: "2025-06-27"
+---
+```{r}
+library(rio)
+data_elec=import("Electricity - installed generating capacity.csv")
+data_diox=import("Carbon dioxide emissions.csv")
+data_ener=import("Energy consumption per capita.csv")
+data_line=import("Telephones - fixed lines.csv")
+data_mov=import("Telephones - mobile cellular.csv")
+data_infla=import("Inflation rate (consumer prices).csv")
+data_joven=import("Youth unemployment rate (ages 15-24).csv")
+data_publi=import("Public debt.csv")
+data_exter=import("Debt - external.csv")
+```
+
+```{r}
+library(janitor)
+library(dplyr)
+data_elec  <- clean_names(data_elec)
+data_diox  <- clean_names(data_diox)
+data_ener  <- clean_names(data_ener)
+data_line  <- clean_names(data_line)
+data_mov   <- clean_names(data_mov)
+data_infla <- clean_names(data_infla)
+data_joven <- clean_names(data_joven)
+data_publi <- clean_names(data_publi)
+data_exter <- clean_names(data_exter)
+```
+```{r}
+names(data_elec)[3]  <- "electricity_capacity"
+names(data_diox)[3]  <- "co2_emissions"
+names(data_ener)[3]  <- "energy_per_capita"
+names(data_line)[3]  <- "fixed_lines"
+names(data_mov)[3]   <- "mobile_phones"
+names(data_infla)[3] <- "inflation"
+names(data_joven)[3] <- "youth_unemployment"
+names(data_publi)[3] <- "public_debt"
+names(data_exter)[3] <- "external_debt"
+```
+
+```{r}
+df <- data_elec %>%
+  full_join(data_diox, by = "name") %>%
+  full_join(data_ener, by = "name") %>%
+  full_join(data_line, by = "name") %>%
+  full_join(data_mov, by = "name") %>%
+  full_join(data_infla, by = "name") %>%
+  full_join(data_joven, by = "name") %>%
+  full_join(data_publi, by = "name") %>%
+  full_join(data_exter, by = "name")
+```
+
+```{r}
+df <- df %>%
+  mutate(across(-name, ~ gsub(",", "", .))) %>%
+  mutate(across(-name, ~ gsub("%", "", .))) %>%
+  mutate(across(-name, as.numeric))
+```
+```{r}
+modelo1 <- lm(inflation ~ fixed_lines + mobile_phones + electricity_capacity +
+                energy_per_capita + co2_emissions, data = df)
+summary(modelo1)
+```
+```{r}
+modelo2 <- lm(youth_unemployment ~ fixed_lines + mobile_phones + electricity_capacity +
+                 energy_per_capita + co2_emissions, data = df)
+summary(modelo2)
+```
+```{r}
+modelo3 <- lm(public_debt ~ fixed_lines + mobile_phones + electricity_capacity +
+                energy_per_capita + co2_emissions, data = df)
+summary(modelo3)
+```
+
